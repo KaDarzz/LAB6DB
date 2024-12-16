@@ -1,0 +1,351 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление выполненными услугами</title>
+
+    <style>
+        /* Общие стили для всей страницы */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+
+        h1, h2 {
+            text-align: center;
+            color: #2c3e50;
+        }
+
+        /* Стили для контейнера */
+        .container {
+            width: 80%;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Стили для формы */
+        form {
+            background-color: #fff;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        form label {
+            font-size: 16px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        form select, form input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        form button {
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        form button:hover {
+            background-color: #2980b9;
+        }
+
+        /* Стили для таблицы */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            background-color: #fff;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        table th, table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        table th {
+            background-color: #3498db;
+            color: white;
+        }
+
+        table td {
+            background-color: #f9f9f9;
+        }
+
+        table td button {
+            padding: 6px 12px;
+            margin-right: 8px;
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        table td button:hover {
+            background-color: #c0392b;
+        }
+
+        /* Стили для кнопки "Редактировать" */
+        table td button.edit-btn {
+            background-color: #f39c12;
+        }
+
+        table td button.edit-btn:hover {
+            background-color: #e67e22;
+        }
+
+        /* Стили для сообщений */
+        .message {
+            padding: 10px;
+            background-color: #dff0d8;
+            color: #3c763d;
+            border-radius: 4px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .message.error {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+    </style>
+
+</head>
+<body>
+    <h1>Управление выполненными услугами</h1>
+
+    <h2>Добавить новую выполненную услугу</h2>
+    <form id="createPerformedServiceForm">
+        <label for="clientId">Клиент:</label>
+        <select id="clientId" required>
+            <!-- Список клиентов будет загружен через JavaScript -->
+        </select>
+        <br>
+        <label for="serviceId">Услуга:</label>
+        <select id="serviceId" required>
+            <!-- Список услуг будет загружен через JavaScript -->
+        </select>
+        <br>
+        <label for="employeeId">Сотрудник:</label>
+        <select id="employeeId" required>
+            <!-- Список сотрудников будет загружен через JavaScript -->
+        </select>
+        <br>
+        <label for="serviceDate">Дата выполнения:</label>
+        <input type="date" id="serviceDate" required>
+        <br>
+        <label for="cost">Стоимость:</label>
+        <input type="number" id="cost" step="0.01" required>
+        <br>
+        <button type="submit">Добавить</button>
+    </form>
+
+    <h2>Список выполненных услуг</h2>
+    <table id="performedServicesTable" border="1">
+        <tr>
+            <th>ID</th>
+            <th>Клиент</th>
+            <th>Услуга</th>
+            <th>Сотрудник</th>
+            <th>Дата</th>
+            <th>Стоимость</th>
+            <th>Действия</th>
+        </tr>
+    </table>
+
+    <script>
+        // Функция для отправки GET-запроса на получение списка выполненных услуг
+        function getPerformedServices() {
+            fetch('/api/performedservicesapi') // API URL для получения списка выполненных услуг
+                .then(response => response.json())
+                .then(data => {
+                    const table = document.getElementById('performedServicesTable');
+                    table.innerHTML = `
+                        <tr>
+                            <th>ID</th>
+                            <th>Клиент</th>
+                            <th>Услуга</th>
+                            <th>Сотрудник</th>
+                            <th>Дата</th>
+                            <th>Стоимость</th>
+                            <th>Действия</th>
+                        </tr>
+                    `;
+                    data.forEach(service => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${service.id}</td>
+                            <td>${service.client ? service.client.fullName : ''}</td>
+                            <td>${service.service ? service.service.name : ''}</td>
+                            <td>${service.employee ? service.employee.fullName : ''}</td>
+                            <td>${service.serviceDate}</td>
+                            <td>${service.cost}</td>
+                            <td>
+                                <button onclick="editPerformedService(${service.id}, '${service.client ? service.client.fullName : ''}', '${service.service ? service.service.name : ''}', '${service.employee ? service.employee.fullName : ''}', '${service.serviceDate}', ${service.cost})">Редактировать</button>
+                                <button onclick="deletePerformedService(${service.id})">Удалить</button>
+                            </td>
+                        `;
+                        table.appendChild(row);
+                    });
+                });
+        }
+
+        // Функция для отправки POST-запроса на создание выполненной услуги
+        function createPerformedService(event) {
+            event.preventDefault();
+            const clientId = document.getElementById('clientId').value;
+            const serviceId = document.getElementById('serviceId').value;
+            const employeeId = document.getElementById('employeeId').value;
+            const serviceDate = document.getElementById('serviceDate').value;
+            const cost = document.getElementById('cost').value;
+
+            fetch('/api/performedservicesapi', { // API URL для создания выполненной услуги
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    clientId: clientId,
+                    serviceId: serviceId,
+                    employeeId: employeeId,
+                    serviceDate: serviceDate,
+                    cost: cost
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Услуга добавлена:', data);
+                    document.getElementById('createPerformedServiceForm').reset();
+                    getPerformedServices(); // Обновляем список выполненных услуг
+                });
+        }
+
+        // Функция для отправки DELETE-запроса на удаление выполненной услуги
+        function deletePerformedService(serviceId) {
+            fetch(`/api/performedservicesapi/${serviceId}`, { // API URL для удаления выполненной услуги
+                method: 'DELETE'
+            })
+                .then(response => {
+                    console.log('Услуга удалена:', serviceId);
+                    getPerformedServices(); // Обновляем список выполненных услуг
+                });
+        }
+
+        // Функция для отправки PUT-запроса на обновление выполненной услуги
+        function updatePerformedService(serviceId, clientId, serviceId, employeeId, serviceDate, cost) {
+            const updatedService = {
+                id: serviceId,
+                clientId: clientId,
+                serviceId: serviceId,
+                employeeId: employeeId,
+                serviceDate: serviceDate,
+                cost: cost
+            };
+
+            fetch(`/api/performedservicesapi/${serviceId}`, { // API URL для обновления выполненной услуги
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updatedService)
+            })
+                .then(response => {
+                    console.log('Услуга обновлена:', updatedService);
+                    getPerformedServices(); // Обновляем список выполненных услуг
+                });
+        }
+
+        // Функция для заполнения формы редактирования выполненной услуги
+        function editPerformedService(serviceId, client, service, employee, serviceDate, cost) {
+            document.getElementById('clientId').value = client;
+            document.getElementById('serviceId').value = service;
+            document.getElementById('employeeId').value = employee;
+            document.getElementById('serviceDate').value = serviceDate;
+            document.getElementById('cost').value = cost;
+
+            const updateButton = document.createElement('button');
+            updateButton.textContent = 'Обновить';
+            updateButton.onclick = function () {
+                updatePerformedService(serviceId, document.getElementById('clientId').value, document.getElementById('serviceId').value, document.getElementById('employeeId').value, document.getElementById('serviceDate').value, document.getElementById('cost').value);
+            };
+
+            const form = document.getElementById('createPerformedServiceForm');
+            const submitButton = form.querySelector('[type="submit"]');
+            if (submitButton) {
+                form.removeChild(submitButton);
+            }
+            form.appendChild(updateButton);
+        }
+
+        // Загрузка списка выполненных услуг при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function () {
+            getPerformedServices();
+            loadDropdowns(); // Загружаем данные для выпадающих списков
+        });
+
+        // Загрузка данных для выпадающих списков
+        function loadDropdowns() {
+            // Загрузим клиентов
+            fetch('/api/clientsapi')
+                .then(response => response.json())
+                .then(data => {
+                    const clientSelect = document.getElementById('clientId');
+                    data.forEach(client => {
+                        const option = document.createElement('option');
+                        option.value = client.id;
+                        option.textContent = client.fullName;
+                        clientSelect.appendChild(option);
+                    });
+                });
+
+            // Загрузим услуги
+            fetch('/api/servicesapi')
+                .then(response => response.json())
+                .then(data => {
+                    const serviceSelect = document.getElementById('serviceId');
+                    data.forEach(service => {
+                        const option = document.createElement('option');
+                        option.value = service.id;
+                        option.textContent = service.name;
+                        serviceSelect.appendChild(option);
+                    });
+                });
+
+            // Загрузим сотрудников
+            fetch('/api/employeesapi')
+                .then(response => response.json())
+                .then(data => {
+                    const employeeSelect = document.getElementById('employeeId');
+                    data.forEach(employee => {
+                        const option = document.createElement('option');
+                        option.value = employee.id;
+                        option.textContent = employee.fullName;
+                        employeeSelect.appendChild(option);
+                    });
+                });
+        }
+
+        // Добавление обработчика события отправки формы
+        const createForm = document.getElementById('createPerformedServiceForm');
+        createForm.addEventListener('submit', createPerformedService);
+    </script>
+</body>
+</html>
